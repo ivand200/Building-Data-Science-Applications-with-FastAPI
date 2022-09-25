@@ -115,6 +115,7 @@ class TestChapter6SQLAlchemyRelationship:
         "id,payload,status_code,nb_comments",
         [
             (1, {"title": "Post 1 Updated"}, status.HTTP_200_OK, 3),
+            (2, {"title": "Post 2 Updated"}, status.HTTP_200_OK, 0),
             (10, {"title": "Post 10 Updated"}, status.HTTP_404_NOT_FOUND, 0),
         ],
     )
@@ -146,11 +147,19 @@ class TestChapter6SQLAlchemyRelationship:
 
         assert response.status_code == status_code
 
+    async def test_create_comment_not_existing_post(self, client: httpx.AsyncClient):
+        response = await client.post(
+            "/comments", json={"post_id": 10, "content": "New comment"}
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        json = response.json()
+        assert json["detail"] == "Post 10 does not exist"
+
     @pytest.mark.parametrize(
         "payload,status_code",
         [
             ({"post_id": 2, "content": "New comment"}, status.HTTP_201_CREATED),
-            ({"post_id": 10, "content": "New comment"}, status.HTTP_400_BAD_REQUEST),
             ({}, status.HTTP_422_UNPROCESSABLE_ENTITY),
         ],
     )
